@@ -17,7 +17,10 @@ path_casa = '/work/FAC/FGSE/IDYST/tbeucler/default/meryam/2021_Bachelor_Thesis/f
 # load casa dataset
 ds_casa = pd.read_csv(path_casa+'/data_casa.csv')
 # extract TEMP corresponding to a certain value of HGHT
-ds_casa = ds_casa.loc[:,['DATE', 'TEMP']].loc[ds_casa['HGHT'] == 58]
+ds_casa = ds_casa.loc[:,['DATE', 'TEMP', 'HGHT']]
+# keep only rows with HGHT value equal 58
+ds_casa = ds_casa.loc[ds_casa['HGHT'] == "58"]
+
 
 # isolate era5 temperatures around casablanca
 lon_indices = np.logical_and(ds_era5.lon>=175,ds_era5.lon<=182)
@@ -28,8 +31,9 @@ ds_era5 = ds_era5.isel({'lon':lon_indices,'lat':lat_indices})
     #isolate Casablanca's temp data
 
 #calculate the number of time steps
-x_steps = len(ds_era5.DATE)
-y_steps = len(ds_casa.DATE)
+x_steps = len(ds_era5.time)
+y_steps = len(ds_casa.loc[:,["DATE"]])
+
 
 # reshape 
 ds_era5.shape = (x_steps,4)
