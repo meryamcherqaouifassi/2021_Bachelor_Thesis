@@ -20,32 +20,32 @@ def get_files(path):
     return files
 
 # convert int month to string of date format
-#def month_to_string(month):
-#    if month == '01':
-#        month = 'Jan'
-#    elif month == '02':
-#        month = 'Feb'
-#    elif month == '03':
-#        month = 'Mar'
-#    elif month == '04':
-#        month = 'Apr'
-#    elif month == '05':
-#        month = 'May'
-#    elif month == '06':
-#        month = 'Jun'
-#    elif month == '07':
-#        month = 'Jul'
-#    elif month == '08':
-#        month = 'Aug'
-#    elif month == '09':
-#        month = 'Sep'
-#    elif month == '10':
-#        month = 'Oct'
-#    elif month == '11':
-#        month = 'Nov'
-#    elif month == '12':
-#        month = 'Dec'
-#    return month
+def string_to_month(month):
+    if month == 'Jan':
+        month = '01'
+    elif month == 'Feb':
+        month = '02'
+    elif month == 'Mar':
+        month = '03'
+    elif month == 'Apr':
+        month = '04'
+    elif month == 'May':
+        month = '05'
+    elif month == 'Jun':
+        month = '06'
+    elif month == 'Jul':
+        month = '07'
+    elif month == 'Aug':
+        month = '08'
+    elif month == 'Sep':
+        month = '09'
+    elif month == 'Oct':
+        month = '10'
+    elif month == 'Nov':
+        month = '11'
+    elif month == 'Dec':
+        month = '12'
+    return month
 
 def txt_to_df(file_name, end, start):
     # table headers
@@ -81,7 +81,8 @@ def txt_to_df(file_name, end, start):
 
         # if line start with start_date_line value keep only 16 last characters
         if line.startswith(start_date_line):
-            actual_date = line[-17:-6].replace(" ", "/")
+            splitted_date = line[-17:-6].split(" ")
+            actual_date = splitted_date[0] + "/" + string_to_month(splitted_date[0] + "/") + "/" + splitted_date[2]
             
         # add edited line in a new array
         lines_with_date.append(actual_date + " " + line)
