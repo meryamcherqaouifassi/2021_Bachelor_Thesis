@@ -20,32 +20,32 @@ def get_files(path):
     return files
 
 # convert int month to string of date format
-def month_to_string(month):
-    if month == '01':
-        month = 'Jan'
-    elif month == '02':
-        month = 'Feb'
-    elif month == '03':
-        month = 'Mar'
-    elif month == '04':
-        month = 'Apr'
-    elif month == '05':
-        month = 'May'
-    elif month == '06':
-        month = 'Jun'
-    elif month == '07':
-        month = 'Jul'
-    elif month == '08':
-        month = 'Aug'
-    elif month == '09':
-        month = 'Sep'
-    elif month == '10':
-        month = 'Oct'
-    elif month == '11':
-        month = 'Nov'
-    elif month == '12':
-        month = 'Dec'
-    return month
+#def month_to_string(month):
+#    if month == '01':
+#        month = 'Jan'
+#    elif month == '02':
+#        month = 'Feb'
+#    elif month == '03':
+#        month = 'Mar'
+#    elif month == '04':
+#        month = 'Apr'
+#    elif month == '05':
+#        month = 'May'
+#    elif month == '06':
+#        month = 'Jun'
+#    elif month == '07':
+#        month = 'Jul'
+#    elif month == '08':
+#        month = 'Aug'
+#    elif month == '09':
+#        month = 'Sep'
+#    elif month == '10':
+#        month = 'Oct'
+#    elif month == '11':
+#        month = 'Nov'
+#    elif month == '12':
+#        month = 'Dec'
+#    return month
 
 def txt_to_df(file_name, end, start):
     # table headers
@@ -74,7 +74,7 @@ def txt_to_df(file_name, end, start):
     month = txt_date[2]
 
     # default value for actual_date, always begin with first of file month
-    actual_date = "01/" + month_to_string(month) + "/" + year
+    actual_date = "01/" + month + "/" + year
         
     for line in lines :
         index = index + 1
@@ -117,16 +117,23 @@ def txt_to_df(file_name, end, start):
     df = df.replace('?', np.nan)
    
     return df
-            
-files = get_files(data_path)
 
+# start and end values
 start = "-----------------------------------------------------------------------------"
 end = "</PRE><H3>Station information and sounding indices</H3><PRE>" 
 start_date_line = "<H2>"
 
+# conversion
+to_df_from_txt = []
+files = get_files(data_path)
 for file in files : 
-    to_df_format_from_txt_file = txt_to_df(file, end, start);
+    to_df_from_txt.append(txt_to_df(file, end, start))
+    
+def merge_dfs(dfs):
+    return pd.concat(dfs, ignore_index=True)
+
+data_casa = merge_dfs(to_df_from_txt)
     
 # export and save to csv file
-file_path = '/work/FAC/FGSE/IDYST/tbeucler/default/meryam/2021_Bachelor_Thesis/files'
-to_df_format_from_txt_file.to_csv(file_path+'/data_casa.csv', index = False)
+#file_path = '/work/FAC/FGSE/IDYST/tbeucler/default/meryam/2021_Bachelor_Thesis/files'
+#to_df_from_txt.to_csv(file_path+'/data_casa.csv', index = False)
