@@ -44,11 +44,9 @@ lon_indices = np.logical_and(ds.lon>=175,   #gives the longitudes array's indice
 lat_indices = np.logical_and(ds.lat>=28,    #gives the latitudes array's indices of the area around Casablanca
                         ds.lat<=38)
 
-ds.isel({'lon':lon_indices,'lat':lat_indices})  #isolate Casablanca's data
 
-plt.plot(central_lon, central_lat, 'ro')
 
-map.grid(which='minor', color='k', linestyle='-', linewidth=10)
+
 
 
 
