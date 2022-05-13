@@ -6,6 +6,11 @@ import xarray as xr
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn import datasets
+from sklearn import svm
+from sklearn.model_selection import cross_validate
+from sklearn.metrics import mean_squared_error, r2_score
 
 
 # path of era5 dataset
@@ -43,17 +48,29 @@ sns.distplot(ds_casa['TEMP'])
 ax.set_xlim(-10, 45)
 plt.show()
 
+# make data_casa temperatures a float
+ds_casa['TEMP'] = ds_casa['TEMP'].astype(np.float32)
+
 # remove ds_casa outliers < 0 and > 45
 ds_casa = ds_casa[ds_casa['TEMP'] > 0]
 ds_casa = ds_casa[ds_casa['TEMP'] < 45]
 
 # scatter plot of casa data
-ds_casa['TEMP'] = ds_casa['TEMP'].astype(np.float32)
 ds_casa.plot('DATE','TEMP')
 
 # distribution of era5 data
 fig, ax = plt.subplots()
 sns.distplot(ds_era5['t2m'])
+
+# calculate the number of time steps
+x_steps = len(ds_era5.time)
+y_steps = len(ds_casa.loc[:,["DATE"]])
+
+# reshape data to fit the LinearRegression model (nb samples, nb features)
+ds_era5.where(ds_era5['time.hour']==12, drop=True)
+ds_casa = ds_casa[np.logical_and(ds_casa.DATE.dt.year>=1979,ds_casa.DATE.dt.year<=2018)]
+ds_era5 = ds_era5.sel(time=ds_casa.DATE.to_numpy())
+ds_era5 = ds_era5.stack({'point':['lat','lon']})
 
 # plot of temperatures of era5 and casa
 fig, ax = plt.subplots()
@@ -62,38 +79,44 @@ ax.set_xlabel('temperature (°C)')
 ax.set_ylabel('temperature (°C)')
 plt.show()
 
-#calculate the number of time steps
-x_steps = len(ds_era5.time)
-y_steps = len(ds_casa.loc[:,["DATE"]])
-
-# crush era5 longitude and latitude into a single feature
-ds_era5 = ds_era5.assign_coords(lon=ds_era5.lon.to_series().values,
-                                lat=ds_era5.lat.to_series().values)
-
-# reshape data to fit the LinearRegression model (nb samples, nb features)
-X = ds_era5.t2m.values.reshape(x_steps,2)
-Y = ds_casa.TEMP.values.reshape(y_steps,1)
-
 # separating training and test data
-x_train = ds_era5.sel(time=slice('1979', '2010'))
-x_test = ds_era5.sel(time=slice('2011', '2018'))
-y_train = ds_casa.sel(time=slice('1973', '2010'))
-y_test = ds_casa.sel(time=slice('2011', '2021'))
+x, y = ds_era5.t2m.values, ds_casa['TEMP']
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, 
+                                                    random_state=0)
 
 # normalization by mean and std
-x_train = (x_train - x_train.mean()) / x_train.std()
-x_test = (x_test - x_test.mean()) / x_test.std()
-y_train = (y_train - y_train.mean()) / y_train.std()
-y_test = (y_test - y_test.mean()) / y_test.std()
+#x_train = (x_train - x_train.mean()) / x_train.std()
+#x_test = (x_test - x_test.mean()) / x_test.std()
+#y_train = (y_train - y_train.mean()) / y_train.std()
+#y_test = (y_test - y_test.mean()) / y_test.std()
 
 # linear regression
 reg = LinearRegression().fit(x_train, y_train)
 reg.predict(x_test)
+print(reg.coef_)
+print(reg.intercept_)
 
-# plot of the linear regression
-plt.scatter(x_train, y_train, color='blue')
+# cross-validation 
+cv_results = cross_validate(reg, x, y, cv=5, scoring = 'neg_mean_squared_error')
+
+# Running Evaluation Metrics
+predictions = reg.predict(x_test)
+r2 = r2_score(y_test, predictions)
+rmse = mean_squared_error(y_test, predictions, squared=False)
+print('The r2 is: ', r2)
+print('The rmse is: ', rmse)
+
+# plot of temperatures of era5 and casa with the regression line
+fig, ax = plt.subplots()
+ax.plot(x_test, y_test, '.')
+ax.plot(x_test, predictions, 'r-')
+ax.set_xlabel('temperature (°C)')
+ax.set_ylabel('temperature (°C)')
+plt.show()
 
 # calculate the climatological baseline
 y_mean = y_train.mean()
+
+
 
 
