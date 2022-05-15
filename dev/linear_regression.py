@@ -2,15 +2,14 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import xarray as xr
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
 import seaborn as sns
 from sklearn.model_selection import train_test_split
-from sklearn import datasets
-from sklearn import svm
 from sklearn.model_selection import cross_validate
 from sklearn.metrics import mean_squared_error, r2_score
+import cartopy.crs as ccrs
 
 
 # path of era5 dataset
@@ -95,6 +94,8 @@ reg = LinearRegression().fit(x_train, y_train)
 reg.predict(x_test)
 print(reg.coef_)
 print(reg.intercept_)
+a = reg.coef_
+b = reg.intercept_ 
 
 # cross-validation 
 cv_results = cross_validate(reg, x, y, cv=5, scoring = 'neg_mean_squared_error')
@@ -114,9 +115,29 @@ ax.set_xlabel('temperature (°C)')
 ax.set_ylabel('temperature (°C)')
 plt.show()
 
+# visualisation 
+central_lon, central_lat = 33.5731104, -7.5898434   #coordinates of Casablanca
+lat_min = 28
+lat_max = 35
+lon_min = -11
+lon_max = -4
+extent = [lon_min, lon_max, lat_min, lat_max]
+time_test = 2000
+norm = mpl.colors.Normalize(vmin=283.15, vmax=303.15) 
+fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_lon)})
+ax.set_extent(extent)
+ax.coastlines(resolution='50m')
+ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True)
+ax.set_title('Predicted temperature for ' + str(time_test) + '-03-18')
+ax.set_xlabel('longitude')
+ax.set_ylabel('latitude')
+ax.set_extent([lon_min, lon_max, lat_min, lat_max])
+#map = ds.sel(time='2000-03-18')['t2m'].plot.imshow(cmap='coolwarm', norm=norm)
+#ax.scatter(ds_era5.lon, ds_era5.lat, c=ds_era5.sel(time='2000-03-18'),
+#              cmap='RdYlBu_r', norm=norm, s=0.5, transform=ccrs.PlateCarree())
+plt.show()
+#map = y_test.sel(time=time_test)['t2m'].plot.imshow(cmap='coolwarm', norm=norm)
+
 # calculate the climatological baseline
 y_mean = y_train.mean()
-
-
-
 
