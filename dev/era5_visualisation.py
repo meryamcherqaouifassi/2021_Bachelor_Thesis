@@ -16,9 +16,9 @@ import matplotlib as mpl
 path_era5 = '/work/FAC/FGSE/IDYST/tbeucler/default/meryam/data/era5/media/rasp'+\
     '/Elements/weather-benchmark' 
 ds = xr.open_dataset(path_era5+'/1.40625deg/2m_temperature/'+\
-                               '2m_temperature_1979_1.40625deg.nc')
+                               '2m_temperature_1989_1.40625deg.nc')
     
-time_test = np.datetime64('1979-12-01T00:00:00.000000000')  #datetime64 format enables to pick a year, daytime, hour...
+time_test = np.datetime64('1989-12-01T00:00:00.000000000')  #datetime64 format enables to pick a year, daytime, hour...
 
 # Geographic coordinates 
 central_lon, central_lat = 33.5731104, -7.5898434   #coordinates of Casablanca

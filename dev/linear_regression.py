@@ -79,7 +79,7 @@ ax.set_ylabel('temperature (°C)')
 plt.show()
 
 # separating training and test data
-x, y = ds_era5.t2m.values, ds_casa['TEMP']
+x, y = ds_era5.t2m, ds_casa['TEMP']
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, 
                                                     random_state=0)
 
