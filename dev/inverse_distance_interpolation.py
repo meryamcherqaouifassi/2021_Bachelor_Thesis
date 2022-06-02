@@ -79,7 +79,7 @@ for i in range(len(ds_era5.lat)):
 # calculate the sum of the distances
 sum_distances = np.sum(distances)
 
-# calculte de weight of each ds_era5 point
+# calculate de weight of each ds_era5 point
 weights = np.zeros(len(ds_era5.lat))
 for i in range(len(ds_era5.lat)):
     weights[i] = distances[i]/sum_distances
