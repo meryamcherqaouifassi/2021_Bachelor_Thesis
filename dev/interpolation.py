@@ -31,126 +31,101 @@ path_casa = '/work/FAC/FGSE/IDYST/tbeucler/default/meryam/2021_Bachelor_Thesis/f
 # load casa dataset
 ds_casa = pd.read_csv(path_casa+'/data_casa.csv')
 # keep only rows with HGHT value equal 58
-ds_casa = ds_casa.loc[ds_casa['HGHT'] == "58"]
+ds_casa = ds_casa.loc[ds_casa['HGHT'] == 58]
 # extract TEMP corresponding to a certain value of HGHT
 ds_casa = ds_casa.loc[:,['DATE', 'TEMP']]
 
 # reshape the data to have the same temporal resolution
 ds_casa['DATE'] = pd.to_datetime(ds_casa['DATE'])
+ds_era5['time'] = pd.to_datetime(ds_era5['time'])
+# keep only times = 00:00
+#ds_casa = ds_casa.loc[ds_casa['DATE'].dt.hour == 12]
 ds_casa = ds_casa.sort_values(by='DATE')
 ds_era5.where(ds_era5['time.hour']==12, drop=True)
 ds_casa = ds_casa[np.logical_and(ds_casa.DATE.dt.year>=1979,ds_casa.DATE.dt.year<=2018)]
-ds_era5 = ds_era5.sel(time=ds_casa.DATE.to_numpy())
+#ds_casa = ds_casa.dropna()
 # make data_casa temperatures a float
 ds_casa['TEMP'] = ds_casa['TEMP'].astype(np.float32)
 # remove ds_casa outliers < 0 and > 45
 ds_casa = ds_casa[ds_casa['TEMP'] > 0]
 ds_casa = ds_casa[ds_casa['TEMP'] < 45]
+ds_era5 = ds_era5.sel(time=ds_casa.DATE.to_numpy())
 
 # set casablanca coordinates
 x0 = 33.5883100     # latitude
 y0 = 172.38862 #-3.80569       # longitude
 coords = [x0, y0]
 
-# draw a gridded map of the area
-lat_min = 28.5
-lat_max = 39
-lon_min = -14
-lon_max = 0
-extent = [lon_min, lon_max, lat_min, lat_max]
-fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(y0)})
-ax.set_extent(extent)
-ax.coastlines(resolution='50m')
-ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True)
-ax.plot(y0, x0, marker='.', markersize=40, color='red')
-ax.set_xlabel('longitude')
-ax.set_ylabel('latitude')
-ax.set_extent([lon_min, lon_max, lat_min, lat_max])
-
 # linear interpolation 
 lin_interp = ds_era5.interp({'lat':x0, 'lon':y0}, method='linear')
 # nearest interpolation
 near_interp = ds_era5.interp({'lat':x0, 'lon':y0}, method='nearest')
 # quadratic interpolation
-near_interp = ds_era5.interp({'lat':x0, 'lon':y0}, method='quadratic')
+quad_interp = ds_era5.interp({'lat':x0, 'lon':y0}, method='quadratic')
 # cubic interpolation
-near_interp = ds_era5.interp({'lat':x0, 'lon':y0}, method='cubic')
+cub_interp = ds_era5.interp({'lat':x0, 'lon':y0}, method='cubic')
 
 # plot of the observed and interpolated temperature
 fig, ax = plt.subplots(dpi = 200)
 ax.plot(ds_casa['DATE'],ds_casa['TEMP'], label = 'Observed')
-lin_interp.plot.scatter('time', 't2m')
-#ax.plot(lin_interp['time'],lin_interp['t2m'], label = 'Interpolated')
-#ax.plot(lin_interp['t2m'], label = 'Interpolated')
+lin_interp.plot.scatter('time', 't2m', label = 'Interpolated', s = 0.25, c = 'black')
 ax.set_xlabel('Date')
 ax.set_ylabel('Temperature (°C)')
 ax.legend()
 plt.tight_layout()
 plt.show()
 
-
+# select from ds_era5 the year 2000
+ds_era5_2000 = ds_era5.sel(time=ds_era5.time.dt.year == 2000)
+# linear interpolation of ds_era5_2000
+lin_interp_2000 = ds_era5_2000.interp({'lat':x0, 'lon':y0}, method='linear')
+# plot of ds_casa + lin_interp
 fig, ax = plt.subplots(dpi = 200)
-#ax.plot(ds_casa['DATE'], ds_casa['TEMP'].isel(time = '2000-01-01'))
-#ax.plot(lin_interp['time'], lin_interp['t2m'].sel(time = '2000-01-01'))
-#ax.plot(lin_interp)
-plt.tight_layout()
+ax.plot(ds_casa.loc[ds_casa.DATE.dt.year == 2000, 'DATE'],ds_casa.loc[ds_casa.DATE.dt.year == 2000, 'TEMP'], label = 'Observed')
+lin_interp_2000.plot.scatter('time', 't2m', label = 'Interpolated', s = 0.25, c = 'black')
 ax.set_xlabel('Date')
 ax.set_ylabel('Temperature (°C)')
+ax.legend()
 plt.tight_layout()
 plt.show()
 
-# function that calculates the distance between era5 points and casablanca coordinates
-#def distance(x,y):
-#    return np.sqrt((x-x0)**2 + (y-y0)**2)
+# nearest-neighbor interpolation of ds_era5_2000
+near_interp_2000 = ds_era5_2000.interp({'lat':x0, 'lon':y0}, method='nearest')
+# plot of ds_casa + lin_interp
+fig, ax = plt.subplots(dpi = 200)
+ax.plot(ds_casa.loc[ds_casa.DATE.dt.year == 2000, 'DATE'],ds_casa.loc[ds_casa.DATE.dt.year == 2000, 'TEMP'], label = 'Observed')
+near_interp_2000.plot.scatter('time', 't2m', label = 'Interpolated', s = 0.25, c = 'black')
+ax.set_xlabel('Date')
+ax.set_ylabel('Temperature (°C)')
+ax.legend()
+plt.tight_layout()
+plt.show()
 
-# go trough all the ds_era5 points and calculate the distance between them and casablanca and put them in a new array
-#distances = np.zeros(len(ds_era5.lat))
-#for i in range(len(ds_era5.lat)):
-#    distances[i] = distance(ds_era5.lon[i], ds_era5.lat[i])
+# quadratic interpolation of ds_era5_2000
+quad_interp_2000 = ds_era5_2000.interp({'lat':x0, 'lon':y0}, method='quadratic')
+# plot of ds_casa + lin_interp
+fig, ax = plt.subplots(dpi = 200)
+ax.plot(ds_casa.loc[ds_casa.DATE.dt.year == 2000, 'DATE'],ds_casa.loc[ds_casa.DATE.dt.year == 2000, 'TEMP'], label = 'Observed')
+quad_interp_2000.plot.scatter('time', 't2m', label = 'Interpolated', s = 0.25, c = 'black')
+ax.set_xlabel('Date')
+ax.set_ylabel('Temperature (°C)')
+ax.legend()
+plt.tight_layout()
+plt.show()
 
-# add the distance array to the ds_era5 dataset
-#ds_era5['distance'] = distances
+# cubic interpolation of ds_era5_2000
+cub_interp_2000 = ds_era5_2000.interp({'lat':x0, 'lon':y0}, method='cubic')
+# plot of ds_casa + lin_interp
+fig, ax = plt.subplots(dpi = 200)
+ax.plot(ds_casa.loc[ds_casa.DATE.dt.year == 2000, 'DATE'],ds_casa.loc[ds_casa.DATE.dt.year == 2000, 'TEMP'], label = 'Observed')
+cub_interp_2000.plot.scatter('time', 't2m', label = 'Interpolated', s = 0.25, c = 'black')
+ax.set_xlabel('Date')
+ax.set_ylabel('Temperature (°C)')
+ax.legend()
+plt.tight_layout()
+plt.show()
 
-# keep the 4 points with the smallest distance to casablanca
-#ds_era5 = ds_era5.values[ds_era5['distance'] == np.min(ds_era5['distance'])]
-
-# find the 4 closest points to casablanca
-# sort the distances array
-#distances = np.sort(distances)
-# find the 4 closest points to casablanca
-#closest_points = np.zeros(4)
-#for i in range(4):
-#    closest_points[i] =  distances[i]
-# create a new dataframe with the 4 closest points
-#ds_era5_closest = ds_era5.isel(time=closest_points)
-
-
-
-
-
-
-# reduce era5 dataset to x0 + 5 and x0 - 5, y0 + 5 and y0 - 5
-#ds_era5 = ds_era5.sel(lon=slice(x0-5,x0+5),lat=slice(y0-5,y0+5))
-
-# using interpolate_to_grid function from metpy.interpolate module, 
-# interpolate era5 temperatures to casablanca coordinates
-#ds_era5_interpolated = interpolate_to_grid(x0, y0, ds_era5)
-#gridx, ridy, t2m = interpolate_to_grid(x0, y0, ds_era5.t2m.values, interp_type='linear')
-# extract interpolated temperatures
-#t2m_interpolated = ds_era5_interpolated['t2m']
-
-# make a map of era5 points around casablanca
-#fig, ax = plt.subplots(figsize=(10,10), subplot_kw=dict(projection=ccrs.PlateCarree()))
-#ax.set_extent([y0-0.5, y0+0.5, x0-0.5, x0+0.5])
-#ax.coastlines()
-
-
-
-# find the 4 closest points of ds_era5 to x0, y0
-# find the distance between x0, y0 and each point of ds_era5
-#distances = np.sqrt((ds_era5.lon - x0)**2 + (ds_era5.lat - y0)**2)
-# find the index of the 4 closest points of ds_era5 to x0, y0
-#indexes = np.argsort(distances)[:4]
-# extract the 4 closest points of ds_era5 to x0, y0
-#ds_era5_4 = ds_era5.isel(time=indexes)
+# observed vs interpolated temperatures plot
+fig, ax = plt.subplots(dpi=200)
+ax.plot(ds_casa.loc[ds_casa.DATE.dt.year == 2000, 'TEMP'], lin_interp_2000['t2m'])
 
