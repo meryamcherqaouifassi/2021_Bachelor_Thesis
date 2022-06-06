@@ -80,7 +80,8 @@ def txt_to_df(file_name, end, start):
         if line.startswith(start_date_line):
             splitted_date = line[-21:-6].split(" ")
             actual_date = splitted_date[1] + "-" + string_to_month(splitted_date[2]) + "-" + splitted_date[3] + "T" + splitted_date[0]
-
+            actual_date = actual_date[:-1]
+            print(actual_date)
     
     if actual_date == "":
         print("empty file: " + txt_date)
@@ -93,7 +94,8 @@ def txt_to_df(file_name, end, start):
         if line.startswith(start_date_line):
             splitted_date = line[-21:-6].split(" ")
             actual_date = splitted_date[1] + "-" + string_to_month(splitted_date[2]) + "-" + splitted_date[3] + "T" + splitted_date[0]
-            
+            actual_date = actual_date[:-1]
+         
         # add edited line in a new array
         lines_with_date.append(actual_date + " " + line)
 
@@ -149,5 +151,5 @@ to_df_from_txt = [df for df in to_df_from_txt if df is not None]
 data_casa = merge_dfs(to_df_from_txt)
     
 # export and save to csv file
-file_path = '/work/FAC/FGSE/IDYST/tbeucler/default/meryam/2021_Bachelor_Thesis/files'
-data_casa.to_csv(file_path+'/data_casa.csv', index = False)
+#file_path = '/work/FAC/FGSE/IDYST/tbeucler/default/meryam/2021_Bachelor_Thesis/files'
+#data_casa.to_csv(file_path+'/data_casa.csv', index = False)

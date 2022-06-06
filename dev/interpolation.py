@@ -127,5 +127,5 @@ plt.show()
 
 # observed vs interpolated temperatures plot
 fig, ax = plt.subplots(dpi=200)
-ax.plot(ds_casa.loc[ds_casa.DATE.dt.year == 2000, 'TEMP'], lin_interp_2000['t2m'])
+ax.scatter(ds_casa.loc[ds_casa.DATE.dt.year == 2000, 'TEMP'], lin_interp_2000['t2m'], s=1)
 
