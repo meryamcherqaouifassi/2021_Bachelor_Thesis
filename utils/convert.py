@@ -143,6 +143,8 @@ for file in files :
 def merge_dfs(dfs):
     return pd.concat(dfs, ignore_index=True)
 
+# remove all dataframes with column type equal to NoneType fro, to_df_from_txt
+to_df_from_txt = [df for df in to_df_from_txt if df.dtypes[0] != type(None)]
 
 data_casa = merge_dfs(to_df_from_txt)
     
