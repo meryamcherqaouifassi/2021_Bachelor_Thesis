@@ -143,11 +143,11 @@ for file in files :
 def merge_dfs(dfs):
     return pd.concat(dfs, ignore_index=True)
 
-# remove all dataframes with column type equal to NoneType fro, to_df_from_txt
-to_df_from_txt = [df for df in to_df_from_txt if df.dtypes[0] != type(None)]
+# remove all items of type Nonetype Object from to_df_from_txt
+to_df_from_txt = [df for df in to_df_from_txt if df is not None]
 
 data_casa = merge_dfs(to_df_from_txt)
     
 # export and save to csv file
 file_path = '/work/FAC/FGSE/IDYST/tbeucler/default/meryam/2021_Bachelor_Thesis/files'
-to_df_from_txt.to_csv(file_path+'/data_casa.csv', index = False)
+data_casa.to_csv(file_path+'/data_casa.csv', index = False)
