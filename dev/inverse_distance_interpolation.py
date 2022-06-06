@@ -34,7 +34,7 @@ lon_indices = np.logical_and(ds_era5.lon>=172,ds_era5.lon<=184)
 lat_indices = np.logical_and(ds_era5.lat>=28.5,ds_era5.lat<=39)
     #gives the latitudes array's indices of the area around Casablanca
 ds_era5 = ds_era5.isel({'lon':lon_indices,'lat':lat_indices})
-    #isolate Casablanca's temp data
+
 
 # convert era5 temperatures from Kelvin to Celsius
 ds_era5['t2m'] = ds_era5['t2m'] - 273.15
@@ -56,13 +56,27 @@ lat_max = 39
 lon_min = -14
 lon_max = 0
 extent = [lon_min, lon_max, lat_min, lat_max]
-
-# Visualise data 
+# Visualise area 
 fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(y0)})
 ax.set_extent(extent)
 ax.coastlines(resolution='50m')
 ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True)
 ax.plot(y0, x0, marker='.', markersize=40, color='red')
+ax.set_xlabel('longitude')
+ax.set_ylabel('latitude')
+ax.set_extent([lon_min, lon_max, lat_min, lat_max])
+
+# Visualise area closer 
+lat_min = 32
+lat_max = 35
+lon_min = -10
+lon_max = -5
+extent = [lon_min, lon_max, lat_min, lat_max]
+fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(y0)})
+ax.set_extent(extent)
+ax.coastlines(resolution='50m')
+ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True)
+ax.plot(y0, x0, marker='.', markersize=30, color='red')
 ax.set_xlabel('longitude')
 ax.set_ylabel('latitude')
 ax.set_extent([lon_min, lon_max, lat_min, lat_max])

@@ -27,7 +27,7 @@ ds_casa = ds_casa.loc[ds_casa['HGHT'] == "58"]
 ds_casa = ds_casa.loc[:,['DATE', 'TEMP']]
 
 # isolate era5 temperatures around casablanca
-lon_indices = np.logical_and(ds_era5.lon>=175,ds_era5.lon<=182)
+lon_indices = np.logical_and(ds_era5.lon>=170,ds_era5.lon<=182)
     #gives the longitudes array's indices of the area around Casablanca
 lat_indices = np.logical_and(ds_era5.lat>=28,ds_era5.lat<=38)
     #gives the latitudes array's indices of the area around Casablanca
@@ -41,11 +41,21 @@ ds_era5['t2m'] = ds_era5['t2m'] - 273.15
 ds_casa['DATE'] = pd.to_datetime(ds_casa['DATE'])
 ds_casa = ds_casa.sort_values(by='DATE')
 
+# reshape data to fit the LinearRegression model (nb samples, nb features)
+ds_era5.where(ds_era5['time.hour']==12, drop=True)
+ds_casa = ds_casa[np.logical_and(ds_casa.DATE.dt.year>=1979,ds_casa.DATE.dt.year<=2018)]
+ds_era5 = ds_era5.sel(time=ds_casa.DATE.to_numpy())
+ds_era5 = ds_era5.stack({'point':['lat','lon']})
+
 # distribution of casa temperatures
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(dpi=150)
 sns.distplot(ds_casa['TEMP'])
 ax.set_xlim(-10, 45)
+plt.tight_layout()
+ax.set_xlabel('Temperature [°C]')
+ax.set_ylabel('Frequency')
 plt.show()
+plt.savefig('/work/FAC/FGSE/IDYST/tbeucler/default/meryam/2021_Bachelor_Thesis/figures')
 
 # make data_casa temperatures a float
 ds_casa['TEMP'] = ds_casa['TEMP'].astype(np.float32)
@@ -55,28 +65,31 @@ ds_casa = ds_casa[ds_casa['TEMP'] > 0]
 ds_casa = ds_casa[ds_casa['TEMP'] < 45]
 
 # scatter plot of casa data
-ds_casa.plot('DATE','TEMP')
+fig, ax = plt.subplots(dpi = 150)
+ax.plot(ds_casa['DATE'],ds_casa['TEMP'])
+plt.tight_layout()
+ax.set_xlabel('Date')
+ax.set_ylabel('Temperature [°C]')
+plt.show()
 
 # distribution of era5 data
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(dpi = 600)
 sns.distplot(ds_era5['t2m'])
+plt.tight_layout()
+ax.set_xlabel('Temperature [°C]')
+ax.set_ylabel('Frequency')
+plt.show()
 
 # calculate the number of time steps
 x_steps = len(ds_era5.time)
 y_steps = len(ds_casa.loc[:,["DATE"]])
 
-# reshape data to fit the LinearRegression model (nb samples, nb features)
-ds_era5.where(ds_era5['time.hour']==12, drop=True)
-ds_casa = ds_casa[np.logical_and(ds_casa.DATE.dt.year>=1979,ds_casa.DATE.dt.year<=2018)]
-ds_era5 = ds_era5.sel(time=ds_casa.DATE.to_numpy())
-ds_era5 = ds_era5.stack({'point':['lat','lon']})
-
 # plot of temperatures of era5 and casa
-fig, ax = plt.subplots()
-ax.plot(ds_era5['t2m'], ds_casa['TEMP'], '.')
-ax.set_xlabel('temperature (°C)')
-ax.set_ylabel('temperature (°C)')
-plt.show()
+#fig, ax = plt.subplots()
+#ax.plot(ds_era5['t2m'], ds_casa['TEMP'], '.')
+#ax.set_xlabel('temperature (°C)')
+#ax.set_ylabel('temperature (°C)')
+#plt.show()
 
 # separating training and test data
 x, y = ds_era5.t2m, ds_casa['TEMP']
@@ -84,10 +97,10 @@ x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2,
                                                     random_state=0)
 
 # normalization by mean and std
-#x_train = (x_train - x_train.mean()) / x_train.std()
-#x_test = (x_test - x_test.mean()) / x_test.std()
-#y_train = (y_train - y_train.mean()) / y_train.std()
-#y_test = (y_test - y_test.mean()) / y_test.std()
+x_train = (x_train - x_train.mean(axis=0)) / x_train.std(axis=0)
+x_test = (x_test - x_test.mean(axis=0)) / x_test.std(axis=0)
+#y_train = (y_train - y_train.mean(axis=0)) / y_train.std(axis=0)
+#y_test = (y_test - y_test.mean(axis=0)) / y_test.std(axis=0)
 
 # linear regression
 reg = LinearRegression().fit(x_train, y_train)
@@ -109,9 +122,8 @@ print('The rmse is: ', rmse)
 
 # plot of temperatures of era5 and casa with the regression line
 fig, ax = plt.subplots()
-ax.plot(x_test, y_test, '.')
 ax.plot(y_test, predictions, 'r-')
-ref_vals = np.linspace(0,40,100)
+ref_vals = np.linspace(-5,40,100)
 ax.plot(ref_vals,ref_vals, c='black')
 ax.set_xlabel('temperature (°C)')
 ax.set_ylabel('temperature (°C)')
@@ -140,6 +152,26 @@ ax.set_extent([lon_min, lon_max, lat_min, lat_max])
 plt.show()
 #map = y_test.sel(time=time_test)['t2m'].plot.imshow(cmap='coolwarm', norm=norm)
 
-# calculate the climatological baseline
-y_mean = y_train.mean()
+
+
+# calculate the monthly climatological baseline of casa temperatures
+# calculate the mean of all the january, febreary..., december temperatures for all the years
+# and put them in a dataframe
+ds_casa_monthly = ds_casa.resample('M').mean()
+
+# calculate the weekly climatological baseline of casa temperatures
+# calculate the mean of all the first, second, ..., 52nd weeks temperatures for all the years
+# and put them in a dataframe
+ds_casa_weekly = ds_casa.resample('W').mean()
+
+# calculate the daily climatological baseline of casa temperatures
+# calculate the mean of all the 01/01, 02/01, ..., 31/01, 01/02, 02/02, ..., 31/02, 01/03, ..., 31/12 temperatures for all the years
+# and put them in a dataframe
+ds_casa_daily = ds_casa.resample('D').mean()
+
+# calculate the persistence baseline of casa temperatures
+# calculate the mean of all the temperatures for all the years
+# and put them in a dataframe
+ds_casa_persistence = ds_casa.resample('A').mean()
+
 

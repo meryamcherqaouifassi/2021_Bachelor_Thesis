@@ -58,7 +58,10 @@ def txt_to_df(file_name, end, start):
     
     with open(file_name, 'r') as f:
         lines = f.readlines()
-                
+    
+    # save first eight lines            
+    firstEightLines = lines[0:8]
+    
     # remove first 9 items from lines
     lines[0:8] = []
     
@@ -69,20 +72,27 @@ def txt_to_df(file_name, end, start):
     index = 0
     
     # keep only file name and split it by '_' to get city, year and month
-    txt_date = file_name.split('/')[-1].split('.')[0].split('_')
-    year = txt_date[1]
-    month = txt_date[2]
+    txt_date = file_name
 
-    # default value for actual_date, always begin with first of file month
-    actual_date = "01/" + month + "/" + year
+    actual_date = ""
+    
+    for line in firstEightLines :
+        if line.startswith(start_date_line):
+            splitted_date = line[-21:-6].split(" ")
+            actual_date = splitted_date[1] + "-" + string_to_month(splitted_date[2]) + "-" + splitted_date[3] + "T" + splitted_date[0]
+
+    
+    if actual_date == "":
+        print("empty file: " + txt_date)
+        return
         
     for line in lines :
         index = index + 1
 
         # if line start with start_date_line value keep only 16 last characters
         if line.startswith(start_date_line):
-            splitted_date = line[-17:-6].split(" ")
-            actual_date = splitted_date[0] + "/" + string_to_month(splitted_date[1]) + "/" + splitted_date[2]
+            splitted_date = line[-21:-6].split(" ")
+            actual_date = splitted_date[1] + "-" + string_to_month(splitted_date[2]) + "-" + splitted_date[3] + "T" + splitted_date[0]
             
         # add edited line in a new array
         lines_with_date.append(actual_date + " " + line)
@@ -133,8 +143,9 @@ for file in files :
 def merge_dfs(dfs):
     return pd.concat(dfs, ignore_index=True)
 
+
 data_casa = merge_dfs(to_df_from_txt)
     
 # export and save to csv file
-#file_path = '/work/FAC/FGSE/IDYST/tbeucler/default/meryam/2021_Bachelor_Thesis/files'
-#to_df_from_txt.to_csv(file_path+'/data_casa.csv', index = False)
+file_path = '/work/FAC/FGSE/IDYST/tbeucler/default/meryam/2021_Bachelor_Thesis/files'
+to_df_from_txt.to_csv(file_path+'/data_casa.csv', index = False)

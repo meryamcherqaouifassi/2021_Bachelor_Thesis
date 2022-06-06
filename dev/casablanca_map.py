@@ -21,7 +21,7 @@ extent = [lon_min, lon_max, lat_min, lat_max]
 fig = plt.figure(figsize=(10,10))
 ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
 ax.coastlines(resolution='50m')
-ax.gridlines()
+ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True)
 ax.set_extent([lon_min, lon_max, lat_min, lat_max])
 ax.plot(central_lon, central_lat, marker='.', markersize=50, color='red')
 ax.set_title('Casablanca')
