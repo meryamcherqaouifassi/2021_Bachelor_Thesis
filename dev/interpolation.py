@@ -126,6 +126,89 @@ plt.tight_layout()
 plt.show()
 
 # observed vs interpolated temperatures plot
-fig, ax = plt.subplots(dpi=200)
-ax.scatter(ds_casa.loc[ds_casa.DATE.dt.year == 2000, 'TEMP'], lin_interp_2000['t2m'], s=1)
+fig, ax = plt.subplots(dpi=400)
+ax.scatter(ds_casa['TEMP'], lin_interp['t2m'], s=1)
+ref_vals = np.linspace(5,30,100)
+ax.plot(ref_vals,ref_vals, c='black')
+plt.tight_layout()
+ax.set_xlabel('Observation [°C]')
+ax.set_ylabel('Prediction [°C]')
+plt.show()
 
+fig, ax = plt.subplots(dpi=400)
+ax.scatter(ds_casa['TEMP'], near_interp['t2m'], s=1)
+ref_vals = np.linspace(5,30,100)
+ax.plot(ref_vals,ref_vals, c='black')
+plt.tight_layout()
+ax.set_xlabel('Observation [°C]')
+ax.set_ylabel('Prediction [°C]')
+plt.show()
+
+fig, ax = plt.subplots(dpi=400)
+ax.scatter(ds_casa['TEMP'], quad_interp['t2m'], s=1)
+ref_vals = np.linspace(5,30,100)
+ax.plot(ref_vals,ref_vals, c='black')
+plt.tight_layout()
+ax.set_xlabel('Observation [°C]')
+ax.set_ylabel('Prediction [°C]')
+plt.show()
+
+fig, ax = plt.subplots(dpi=400)
+ax.scatter(ds_casa['TEMP'], cub_interp['t2m'], s=1)
+ref_vals = np.linspace(5,30,100)
+ax.plot(ref_vals,ref_vals, c='black')
+plt.tight_layout()
+ax.set_xlabel('Observation [°C]')
+ax.set_ylabel('Prediction [°C]')
+plt.show()
+
+# calculate the quantile of ds_casa temperatures
+ds_casa_quantile = ds_casa.groupby('DATE').quantile(0.5)
+# calculate the quantile of lin_interp temperatures
+lin_interp_quantile = lin_interp.groupby('time').quantile(0.5)
+# calculate the quantile of near_interp temperatures
+near_interp_quantile = near_interp.groupby('time').quantile(0.5)
+# calculate the quantile of quad_interp temperatures
+quad_interp_quantile = quad_interp.groupby('time').quantile(0.5)
+# calculate the quantile of cub_interp temperatures
+cub_interp_quantile = cub_interp.groupby('time').quantile(0.5)
+
+# make a scatter of ds_casa_quantile and lin_interp_quantile
+fig, ax = plt.subplots(dpi=400)
+ax.scatter(ds_casa_quantile['TEMP'], lin_interp_quantile['t2m'], s=1)
+ref_vals = np.linspace(0,40,100)
+ax.plot(ref_vals,ref_vals, c='black')
+plt.tight_layout()
+ax.set_xlabel('Observation quantile [°C]')
+ax.set_ylabel('Prediction quantile [°C]')
+plt.show()
+
+# make a scatter of ds_casa_quantile and near_interp_quantile
+fig, ax = plt.subplots(dpi=400)
+ax.scatter(ds_casa_quantile['TEMP'], near_interp_quantile['t2m'], s=1)
+ref_vals = np.linspace(0,40,100)
+ax.plot(ref_vals,ref_vals, c='black')
+plt.tight_layout()
+ax.set_xlabel('Observation quantile [°C]')
+ax.set_ylabel('Prediction quantile [°C]')
+plt.show()
+
+# make a scatter of ds_casa_quantile and quad_interp_quantile
+fig, ax = plt.subplots(dpi=400)
+ax.scatter(ds_casa_quantile['TEMP'], quad_interp_quantile['t2m'], s=1)
+ref_vals = np.linspace(0,40,100)
+ax.plot(ref_vals,ref_vals, c='black')
+plt.tight_layout()
+ax.set_xlabel('Observation quantile [°C]')
+ax.set_ylabel('Prediction quantile [°C]')
+plt.show()
+
+# make a scatter of ds_casa_quantile and cub_interp_quantile
+fig, ax = plt.subplots(dpi=400)
+ax.scatter(ds_casa_quantile['TEMP'], cub_interp_quantile['t2m'], s=1)
+ref_vals = np.linspace(0,40,100)
+ax.plot(ref_vals,ref_vals, c='black')
+plt.tight_layout()
+ax.set_xlabel('Observation quantile [°C]')
+ax.set_ylabel('Prediction quantile [°C]')
+plt.show()
