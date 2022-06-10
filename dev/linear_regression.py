@@ -60,10 +60,6 @@ y_steps = len(ds_casa.loc[:,["DATE"]])
 x, y = ds_era5.t2m, ds_casa
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
 
-# split time indices into training and test data corresponding to x_train and x_test splits
-time_train, time_test = ds_era5.time['t2m'==x_train], ds_era5.time['t2m'==x_test]
-time_train, time_test = ds_era5.time[ds_era5.t2m==x_train], ds_era5.time[ds_era5.t2m==x_test]
-
 
 # normalization by mean and std
 x_train = (x_train - x_train.mean(axis=0)) / x_train.std(axis=0)
@@ -138,23 +134,48 @@ plt.show()
 
 
 # calculate the monthly climatological baseline of casa temperatures
-# calculate the mean of all the january, febreary..., december temperatures for all the years
+# calculate the mean of all the january, february..., december temperatures for all the years
 # and put them in a dataframe
-ds_casa_monthly = ds_casa['TEMP'].resample('M').mean()
+ds_casa_monthly = ds_casa.resample('M').mean()
+# calculate the r2 of the monthly climatological baseline
+r2_monthly = r2_score(ds_casa_monthly['TEMP'], ds_casa_monthly['TEMP'].mean())
 
 # calculate the weekly climatological baseline of casa temperatures
 # calculate the mean of all the first, second, ..., 52nd weeks temperatures for all the years
 # and put them in a dataframe
 ds_casa_weekly = ds_casa.resample('W').mean()
+# calculate the r2 of the weekly climatological baseline
+r2_weekly = r2_score(ds_casa_weekly['TEMP'], ds_casa_weekly['TEMP'].mean())
 
 # calculate the daily climatological baseline of casa temperatures
 # calculate the mean of all the 01/01, 02/01, ..., 31/01, 01/02, 02/02, ..., 31/02, 01/03, ..., 31/12 temperatures for all the years
 # and put them in a dataframe
 ds_casa_daily = ds_casa.resample('D').mean()
+# calculate the r2 of the daily climatological baseline
+r2_daily = r2_score(ds_casa_daily['TEMP'], ds_casa_daily['TEMP'].mean())
 
 # calculate the persistence baseline of casa temperatures
 # calculate the mean of all the temperatures for all the years
 # and put them in a dataframe
 ds_casa_persistence = ds_casa.resample('A').mean()
+# calculate the r2 of the persistence baseline
+r2_persistence = r2_score(ds_casa_persistence['TEMP'], ds_casa_persistence['TEMP'].mean())
 
+# scatter of the r2 as a function of the number of inputs 
+fig, ax = plt.subplots(dpi = 300)
+ax.scatter(x_steps, r2)
+# add a y=1 line
+ax.plot(x_steps, [1]*len(x_steps), 'k--')
+# add a y = r2_monthly line
+ax.plot(x_steps, [r2_monthly]*len(x_steps), 'r--')
+# add a y = r2_weekly line
+ax.plot(x_steps, [r2_weekly]*len(x_steps), 'g--')
+# add a y = r2_daily line
+ax.plot(x_steps, [r2_daily]*len(x_steps), 'b--')
+# add a y = r2_persistence line
+ax.plot(x_steps, [r2_persistence]*len(x_steps), 'y--')
+ax.set_xlabel('Number of inputs')
+ax.set_ylabel('R2')
+plt.tight_layout()
+plt.show()
 
