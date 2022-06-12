@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_validate
 from sklearn.metrics import mean_squared_error, r2_score
 import cartopy.crs as ccrs
+#import cdstoolbox as ct
 
 
 # path of era5 dataset
@@ -136,9 +137,24 @@ plt.show()
 # calculate the monthly climatological baseline of casa temperatures
 # calculate the mean of all the january, february..., december temperatures for all the years
 # and put them in a dataframe
-ds_casa_monthly = ds_casa.resample('M').mean()
+# for all the dates in ds_casa
+ds_casa_str = ds_casa.astype('str')
+year = [datenow[0:4] for datenow in ds_casa_str['DATE']]
+year = np.array(year)
+month = [d[5:7] for d in ds_casa_str['DATE']]
+month = np.array(month)
+day = [datenow[8:10] for datenow in ds_casa_str['DATE']]
+day = np.array(day)
+        
+means_months = np.zeros(12)
+index = 0
+for month_now in np.unique(month):
+    means_months[index] = ds_casa[(month == month_now)].mean()
+    index = index + 1
+    
+ds_casa_monthly = means_months.mean()
 # calculate the r2 of the monthly climatological baseline
-r2_monthly = r2_score(ds_casa_monthly['TEMP'], ds_casa_monthly['TEMP'].mean())
+r2_monthly = r2_score(ds_casa['TEMP'], means_months)
 
 # calculate the weekly climatological baseline of casa temperatures
 # calculate the mean of all the first, second, ..., 52nd weeks temperatures for all the years
@@ -150,9 +166,16 @@ r2_weekly = r2_score(ds_casa_weekly['TEMP'], ds_casa_weekly['TEMP'].mean())
 # calculate the daily climatological baseline of casa temperatures
 # calculate the mean of all the 01/01, 02/01, ..., 31/01, 01/02, 02/02, ..., 31/02, 01/03, ..., 31/12 temperatures for all the years
 # and put them in a dataframe
-ds_casa_daily = ds_casa.resample('D').mean()
+means_days = np.zeros(372)
+index = 0
+for month_now in np.unique(month):
+    for day_now in np.unique(day):
+        means_days[index] = ds_casa[(day == day_now)].mean()
+        index = index + 1
+        
+ds_casa_daily = means_days.mean()
 # calculate the r2 of the daily climatological baseline
-r2_daily = r2_score(ds_casa_daily['TEMP'], ds_casa_daily['TEMP'].mean())
+#r2_daily = r2_score(ds_casa_daily['TEMP'], ds_casa_daily['TEMP'].mean())
 
 # calculate the persistence baseline of casa temperatures
 # calculate the mean of all the temperatures for all the years
