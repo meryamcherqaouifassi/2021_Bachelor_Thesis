@@ -10,8 +10,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_validate
 from sklearn.metrics import mean_squared_error, r2_score
 import cartopy.crs as ccrs
-#import cdstoolbox as ct
-
+from statsmodels.graphics.gofplots import qqplot
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
 
 # path of era5 dataset
 path_era5 = '/work/FAC/FGSE/IDYST/tbeucler/default/meryam/data/era5/media/rasp/Elements/weather-benchmark/1.40625deg/2m_temperature/'
@@ -81,10 +82,12 @@ cv_results = cross_validate(reg, x, y['TEMP'], cv=5, scoring = 'neg_mean_squared
 
 # Running Evaluation Metrics
 predictions = reg.predict(x_test)
-r2 = r2_score(y_test['TEMP'], predictions)
-rmse = mean_squared_error(y_test['TEMP'], predictions, squared=False)
-print('The r2 is: ', r2)
-print('The rmse is: ', rmse)
+r2_reg = r2_score(y_test['TEMP'], predictions)
+rmse_reg = mean_squared_error(y_test['TEMP'], predictions, squared=False)
+mean_absolute_error_reg = mean_absolute_error(y_test['TEMP'], predictions)
+print('The r2 (coefficient of determination) is: ', r2_reg)
+print('The rmse (mean squared error) is: ', rmse_reg)
+print('The mean absolute error is: ', mean_absolute_error_reg)
 
 # keep from ds_casa only the dates of the test data
 #ds_casa = ds_casa.loc[ds_casa.DATE.isin(y_test.index)]
@@ -135,10 +138,10 @@ plt.show()
 
 
 # calculate the monthly climatological baseline of casa temperatures
-# calculate the mean of all the january, february..., december temperatures for all the years
-# and put them in a dataframe
+# calculate the mean of all the january, february..., december temperatures for 
+# all the years and put them in a dataframe
 # for all the dates in ds_casa
-ds_casa_str = ds_casa.astype('str')
+ds_casa_str = y_train.astype('str')
 year = [datenow[0:4] for datenow in ds_casa_str['DATE']]
 year = np.array(year)
 month = [d[5:7] for d in ds_casa_str['DATE']]
@@ -146,15 +149,42 @@ month = np.array(month)
 day = [datenow[8:10] for datenow in ds_casa_str['DATE']]
 day = np.array(day)
         
-means_months = np.zeros(12)
+train_means_months = np.zeros(12)
 index = 0
 for month_now in np.unique(month):
-    means_months[index] = ds_casa[(month == month_now)].mean()
+    train_means_months[index] = y_train[(month == month_now)].mean()
     index = index + 1
     
-ds_casa_monthly = means_months.mean()
+ds_casa_str = y_test.astype('str')
+year = [datenow[0:4] for datenow in ds_casa_str['DATE']]
+year = np.array(year)
+month = [d[5:7] for d in ds_casa_str['DATE']]
+month = np.array(month)
+day = [datenow[8:10] for datenow in ds_casa_str['DATE']]
+day = np.array(day)
+    
+test_means_months = np.zeros(12)
+index = 0
+for month_now in np.unique(month):
+    test_means_months[index] = y_test[(month == month_now)].mean()
+    index = index + 1
+    
 # calculate the r2 of the monthly climatological baseline
-r2_monthly = r2_score(ds_casa['TEMP'], means_months)
+r2_monthly = r2_score(train_means_months, test_means_months)
+
+
+def create_weekly_climatology_forecast(ds_train, valid_time):
+    ds_train['month'] = ds_train['time.week']
+    weekly_averages = ds_train.groupby('week').mean('time')
+    valid_time['week'] = valid_time['time.week']
+    fc_list = []
+    for t in valid_time:
+        fc_list.append(weekly_averages.sel(week=t.week))
+    return xr.concat(fc_list, dim=valid_time)
+
+
+
+
 
 # calculate the weekly climatological baseline of casa temperatures
 # calculate the mean of all the first, second, ..., 52nd weeks temperatures for all the years
@@ -177,12 +207,62 @@ ds_casa_daily = means_days.mean()
 # calculate the r2 of the daily climatological baseline
 #r2_daily = r2_score(ds_casa_daily['TEMP'], ds_casa_daily['TEMP'].mean())
 
+
+
+
 # calculate the persistence baseline of casa temperatures
-# calculate the mean of all the temperatures for all the years
-# and put them in a dataframe
-ds_casa_persistence = ds_casa.resample('A').mean()
-# calculate the r2 of the persistence baseline
-r2_persistence = r2_score(ds_casa_persistence['TEMP'], ds_casa_persistence['TEMP'].mean())
+# today's temperature is tomorrow's temperature
+# Create a lag feature
+var = pd.DataFrame(ds_casa['TEMP'])
+dataframe = pd.concat([var.shift(1), var], axis=1)
+dataframe.columns = ['t', 't+1']
+print(dataframe.head(5))
+
+# Split series into train and test sets
+X = dataframe.values
+train_size = int(len(X) * 0.7)
+train, test = X[1:train_size], X[train_size:]
+train_X, train_y = train[:,0], train[:,1]
+test_X, test_y = test[:,0], test[:,1]
+
+# Create a baseline model (Naive model)
+def model_persistence(x):
+  return x
+
+# walk-forward validation
+predicted = list()
+for x in test_X:
+  yhat = model_persistence(x)
+  predicted.append(yhat)
+rmse_pers = np.sqrt(mean_squared_error(test_y, predicted))
+r2_pers = r2_score(test_y, predicted)
+print('Test RMSE: %.3f' % rmse_pers)
+print('Test R2: %.3f' % r2_pers)
+
+# naive forecast
+predictions = [x for x in test_X]
+# calculate residuals
+residuals = [test_y[i]-predictions[i] for i in range(len(predictions))]
+residuals = pd.DataFrame(residuals)
+print(residuals.head())
+
+# summary statistics
+print(residuals.describe())
+
+# plot residuals
+residuals.plot()
+# histogram plot
+residuals.hist()
+# density plot
+residuals.plot(kind='kde')
+# Plot Q-Q plot
+residuals = [test_y[i]-predictions[i] for i in range(len(predictions))]
+residuals = np.array(residuals)
+qqplot(residuals, line='r')
+plt.show()
+
+
+
 
 # scatter of the r2 as a function of the number of inputs 
 fig, ax = plt.subplots(dpi = 300)
