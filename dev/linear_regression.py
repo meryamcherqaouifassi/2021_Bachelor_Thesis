@@ -84,10 +84,10 @@ cv_results = cross_validate(reg, x, y['TEMP'], cv=5, scoring = 'neg_mean_squared
 predictions = reg.predict(x_test)
 r2_reg = r2_score(y_test['TEMP'], predictions)
 rmse_reg = mean_squared_error(y_test['TEMP'], predictions, squared=False)
-mean_absolute_error_reg = mean_absolute_error(y_test['TEMP'], predictions)
+abs_error_reg = mean_absolute_error(y_test['TEMP'], predictions)
 print('The r2 (coefficient of determination) is: ', r2_reg)
 print('The rmse (mean squared error) is: ', rmse_reg)
-print('The mean absolute error is: ', mean_absolute_error_reg)
+print('The mean absolute error is: ', abs_error_reg)
 
 # keep from ds_casa only the dates of the test data
 #ds_casa = ds_casa.loc[ds_casa.DATE.isin(y_test.index)]
@@ -169,19 +169,13 @@ for month_now in np.unique(month):
     test_means_months[index] = y_test[(month == month_now)].mean()
     index = index + 1
     
-# calculate the r2 of the monthly climatological baseline
+# calculate the r2, rmse and absolute mean error of the monthly baseline
 r2_monthly = r2_score(train_means_months, test_means_months)
-
-
-def create_weekly_climatology_forecast(ds_train, valid_time):
-    ds_train['month'] = ds_train['time.week']
-    weekly_averages = ds_train.groupby('week').mean('time')
-    valid_time['week'] = valid_time['time.week']
-    fc_list = []
-    for t in valid_time:
-        fc_list.append(weekly_averages.sel(week=t.week))
-    return xr.concat(fc_list, dim=valid_time)
-
+rmse_monthly = mean_squared_error(train_means_months, test_means_months)
+abs_error_monthly = mean_absolute_error(train_means_months, test_means_months)
+print('The r2 (coefficient of determination) is: ', r2_monthly)
+print('The rmse (mean squared error) is: ', rmse_monthly)
+print('The mean absolute error is: ', abs_error_monthly)
 
 
 
@@ -192,6 +186,10 @@ def create_weekly_climatology_forecast(ds_train, valid_time):
 ds_casa_weekly = ds_casa.resample('W').mean()
 # calculate the r2 of the weekly climatological baseline
 r2_weekly = r2_score(ds_casa_weekly['TEMP'], ds_casa_weekly['TEMP'].mean())
+
+
+
+
 
 # calculate the daily climatological baseline of casa temperatures
 # calculate the mean of all the 01/01, 02/01, ..., 31/01, 01/02, 02/02, ..., 31/02, 01/03, ..., 31/12 temperatures for all the years
@@ -236,8 +234,10 @@ for x in test_X:
   predicted.append(yhat)
 rmse_pers = np.sqrt(mean_squared_error(test_y, predicted))
 r2_pers = r2_score(test_y, predicted)
+mae_pers = mean_absolute_error(test_y, predicted)
 print('Test RMSE: %.3f' % rmse_pers)
 print('Test R2: %.3f' % r2_pers)
+print('Test MAE: %.3f' % mae_pers)
 
 # naive forecast
 predictions = [x for x in test_X]
@@ -250,33 +250,40 @@ print(residuals.head())
 print(residuals.describe())
 
 # plot residuals
+fig, ax = plt.subplots(dpi=400)
 residuals.plot()
+plt.show()
 # histogram plot
-residuals.hist()
-# density plot
-residuals.plot(kind='kde')
+fig, ax = plt.subplots(dpi=600)
+sns.distplot(residuals)
+ax.set_ylabel('Frequency')
+plt.show()
 # Plot Q-Q plot
 residuals = [test_y[i]-predictions[i] for i in range(len(predictions))]
 residuals = np.array(residuals)
-qqplot(residuals, line='r')
+fig, ax = plt.subplots(dpi=600)
+qqplot(residuals, line='r', ax=ax)
 plt.show()
 
 
 
 
-# scatter of the r2 as a function of the number of inputs 
+# scatter of the r2 as a function of the number of inputs
+xaxis = np.zeros(12898)
+for i in range(1,12899,1):
+    xaxis[i-1]=i
+
+ 
 fig, ax = plt.subplots(dpi = 300)
-ax.scatter(x_steps, r2)
+ax.scatter(xaxis, r2_reg*xaxis)
 # add a y=1 line
-ax.plot(x_steps, [1]*len(x_steps), 'k--')
+ax.plot(xaxis, [1]*xaxis, 'k--')
+# add y = r2_pers line
+ax.plot([r2_pers]*xaxis, 0*xaxis, 'g--')
 # add a y = r2_monthly line
-ax.plot(x_steps, [r2_monthly]*len(x_steps), 'r--')
-# add a y = r2_weekly line
-ax.plot(x_steps, [r2_weekly]*len(x_steps), 'g--')
+#ax.plot(x_steps, [r2_monthly]*len(x_steps), 'r--')
 # add a y = r2_daily line
-ax.plot(x_steps, [r2_daily]*len(x_steps), 'b--')
-# add a y = r2_persistence line
-ax.plot(x_steps, [r2_persistence]*len(x_steps), 'y--')
+#ax.plot(x_steps, [r2_daily]*len(x_steps), 'b--')
 ax.set_xlabel('Number of inputs')
 ax.set_ylabel('R2')
 plt.tight_layout()
