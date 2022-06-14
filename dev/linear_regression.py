@@ -112,6 +112,44 @@ ax.legend()
 plt.tight_layout()
 plt.show()
 
+# for each time step, calculate the correlation between era5 and casa temperatures
+corr_list = []
+for i in range(x_steps):
+    print(x[i])
+    # calculate the correlation between era5 and casa temperatures
+    corr_list.append(np.corrcoef(ds_era5.isel(time=i).t2m.values, ds_casa.loc[i,["TEMP"]].values)[0,1])
+
+# put the correlation values in a dataframe
+corr_df = pd.DataFrame(corr_list)
+corr_df.columns = ['corr']
+corr_df['time'] = ds_era5.time
+# put the correlations in descending order
+corr_df = corr_df.sort_values(by='corr', ascending=False)
+
+# create new empty dataframes
+sub_x = np.empty((x_steps,2)) 
+sub_y = np.empty((y_steps,2))
+sub_reg = np.empty((x_steps,2))
+sub_pred = np.empty((x_steps,2))
+sub_r2 = np.empty((x_steps,2))  
+# for all the timesteps in corr_df
+for i in range(len(corr_df)):
+    sub_x[i] = x[i]
+    sub_y[i] = y[i]
+    # if the length of sub_x is < 2
+    if len(sub_x) < 2:
+        sub_reg[i] = LinearRegression().fit(sub_x, sub_y['TEMP'])
+        sub_pred[i] = sub_reg[i].predict(sub_x)
+        sub_r2[i] = r2_score(sub_y['TEMP'], sub_pred[i])
+    # if the length of sub_x is >= 2
+    else:
+        sub_x_train, sub_x_test, sub_y_train, sub_y_test = train_test_split(sub_x, sub_y, test_size=0.2, random_state=0)
+        sub_x_train = (sub_x_train - sub_x_train.mean(axis=0)) / sub_x_train.std(axis=0)
+        sub_x_test = (sub_x_test - sub_x_test.mean(axis=0)) / sub_x_test.std(axis=0)
+        sub_reg[i] = LinearRegression().fit(sub_x_train, sub_y_train['TEMP'])
+        sub_pred[i] = sub_reg[i].predict(sub_x_test)
+        sub_r2[i] = r2_score(sub_y_test['TEMP'], sub_pred[i]) 
+
 # visualisation 
 #central_lon, central_lat = 33.5731104, -7.5898434   #coordinates of Casablanca
 #lat_min = 28
@@ -155,39 +193,43 @@ for month_now in np.unique(month):
     train_means_months[index] = y_train[(month == month_now)].mean()
     index = index + 1
     
-ds_casa_str = y_test.astype('str')
-year = [datenow[0:4] for datenow in ds_casa_str['DATE']]
-year = np.array(year)
-month = [d[5:7] for d in ds_casa_str['DATE']]
-month = np.array(month)
-day = [datenow[8:10] for datenow in ds_casa_str['DATE']]
-day = np.array(day)
-    
-test_means_months = np.zeros(12)
-index = 0
-for month_now in np.unique(month):
-    test_means_months[index] = y_test[(month == month_now)].mean()
-    index = index + 1
-    
-# calculate the r2, rmse and absolute mean error of the monthly baseline
-r2_monthly = r2_score(train_means_months, test_means_months)
-rmse_monthly = mean_squared_error(train_means_months, test_means_months)
-abs_error_monthly = mean_absolute_error(train_means_months, test_means_months)
-print('The r2 (coefficient of determination) is: ', r2_monthly)
-print('The rmse (mean squared error) is: ', rmse_monthly)
-print('The mean absolute error is: ', abs_error_monthly)
+# calculate the predicted temperatures as the average of the month it belongs to
+# for all the dates in y_test
+predictions_months = np.zeros(len(y_test))
+for i in range(len(y_test)):
+    predictions_months[i] = train_means_months[int(month[i]) - 1]
 
+# calculate the r2, rmse and absolute mean error of the monthly baseline and the predictions
+r2_months = r2_score(y_test['TEMP'], predictions_months)
+print('r2_months: ' + str(r2_months))
+rmse_months = np.sqrt(mean_squared_error(y_test['TEMP'], predictions_months))
+print('rmse_months: ' + str(rmse_months))
+abs_mean_error_months = np.mean(np.abs(y_test['TEMP'] - predictions_months))
+print('abs_mean_error_months: ' + str(abs_mean_error_months))
 
-
-
-# calculate the weekly climatological baseline of casa temperatures
-# calculate the mean of all the first, second, ..., 52nd weeks temperatures for all the years
-# and put them in a dataframe
-ds_casa_weekly = ds_casa.resample('W').mean()
-# calculate the r2 of the weekly climatological baseline
-r2_weekly = r2_score(ds_casa_weekly['TEMP'], ds_casa_weekly['TEMP'].mean())
-
-
+# reset y_test indexes 
+y_test = y_test.reset_index()
+# calculate the residuals of the monthly baseline and the predictions
+residuals_months = [y_test['TEMP'][i]-predictions_months[i] for i in range(len(predictions_months))]
+# put them in a dataframe
+residuals_months = pd.DataFrame(residuals_months)
+# summary statistics of the residuals
+print(residuals_months.describe())
+# plot residuals
+fig, ax = plt.subplots(dpi=600)
+residuals_months.plot()
+plt.show()
+# histogram plot
+fig, ax = plt.subplots(dpi=600)
+sns.distplot(residuals_months)
+ax.set_ylabel('Frequency')
+plt.show()
+# Plot Q-Q plot
+residuals_months = [y_test['TEMP'][i]-predictions_months[i] for i in range(len(predictions_months))]
+residuals_months = np.array(residuals_months)
+fig, ax = plt.subplots(dpi=600)
+qqplot(residuals_months, line='r', ax=ax)
+plt.show()
 
 
 
@@ -198,13 +240,45 @@ means_days = np.zeros(372)
 index = 0
 for month_now in np.unique(month):
     for day_now in np.unique(day):
-        means_days[index] = ds_casa[(day == day_now)].mean()
+        means_days[index] = y_train[(month == month_now) & (day == day_now)].mean()
         index = index + 1
         
-ds_casa_daily = means_days.mean()
-# calculate the r2 of the daily climatological baseline
-#r2_daily = r2_score(ds_casa_daily['TEMP'], ds_casa_daily['TEMP'].mean())
+# calculate the predicted temperatures as the average of the day it belongs to
+# for all the dates in y_test
+predictions_days = np.zeros(len(y_test))
+for i in range(len(y_test)):
+    predictions_days[i] = means_days[int(month[i]) - 1]
+    
+    
+# calculate the r2, rmse and absolute mean error of the monthly baseline and the predictions
+r2_days = r2_score(y_test['TEMP'], predictions_days)
+print('r2_days: ' + str(r2_days))
+rmse_days = np.sqrt(mean_squared_error(y_test['TEMP'], predictions_days))
+print('rmse_days: ' + str(rmse_days))
+abs_mean_error_days = np.mean(np.abs(y_test['TEMP'] - predictions_days))
+print('abs_mean_error_days: ' + str(abs_mean_error_days))
 
+# calculate the residuals of the monthly baseline and the predictions
+residuals_days = [y_test['TEMP'][i]-predictions_days[i] for i in range(len(predictions_days))]
+# put them in a dataframe
+residuals_days = pd.DataFrame(residuals_days)
+# summary statistics of the residuals
+print(residuals_days.describe())
+# plot residuals
+fig, ax = plt.subplots(dpi=600)
+residuals_days.plot()
+plt.show()
+# histogram plot
+fig, ax = plt.subplots(dpi=600)
+sns.distplot(residuals_days)
+ax.set_ylabel('Frequency')
+plt.show()
+# Plot Q-Q plot
+residuals_days = [y_test['TEMP'][i]-predictions_days[i] for i in range(len(predictions_days))]
+residuals_days = np.array(residuals_days)
+fig, ax = plt.subplots(dpi=600)
+qqplot(residuals_days, line='r', ax=ax)
+plt.show()
 
 
 
@@ -229,8 +303,8 @@ def model_persistence(x):
 
 # walk-forward validation
 predicted = list()
-for x in test_X:
-  yhat = model_persistence(x)
+for X in test_X:
+  yhat = model_persistence(X)
   predicted.append(yhat)
 rmse_pers = np.sqrt(mean_squared_error(test_y, predicted))
 r2_pers = r2_score(test_y, predicted)
@@ -240,7 +314,7 @@ print('Test R2: %.3f' % r2_pers)
 print('Test MAE: %.3f' % mae_pers)
 
 # naive forecast
-predictions = [x for x in test_X]
+predictions = [X for X in test_X]
 # calculate residuals
 residuals = [test_y[i]-predictions[i] for i in range(len(predictions))]
 residuals = pd.DataFrame(residuals)
