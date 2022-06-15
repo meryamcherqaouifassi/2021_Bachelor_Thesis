@@ -114,25 +114,37 @@ plt.show()
 
 # for each time step, calculate the correlation between era5 and casa temperatures
 corr_list = []
-for i in range(x_steps):
-    print(x[i])
-    # calculate the correlation between era5 and casa temperatures
-    corr_list.append(np.corrcoef(ds_era5.isel(time=i).t2m.values, ds_casa.loc[i,["TEMP"]].values)[0,1])
+
+for j in range(len(ds_era5.point)):
+    corr_list.append(np.corrcoef(ds_era5.sel(point = ds_era5.point[j].values).t2m.values, ds_casa['TEMP']))
+
+correlations = [item[0][1] for item in corr_list]
+points = [item for item in ds_era5.point]
 
 # put the correlation values in a dataframe
-corr_df = pd.DataFrame(corr_list)
-corr_df.columns = ['corr']
-corr_df['time'] = ds_era5.time
+corr_df = pd.DataFrame(columns=['corr', 'points'])
+corr_df["corr"] = correlations
+corr_df["points"] = points
 # put the correlations in descending order
 corr_df = corr_df.sort_values(by='corr', ascending=False)
 
 # create new empty dataframes
-sub_x = np.empty((x_steps,2)) 
+sub_x = pd.DataFrame(columns=["points", "temp"])
 sub_y = np.empty((y_steps,2))
 sub_reg = np.empty((x_steps,2))
 sub_pred = np.empty((x_steps,2))
 sub_r2 = np.empty((x_steps,2))  
-# for all the timesteps in corr_df
+# for all the points in corr_df
+
+
+for i in range(2):
+    point = corr_df.iloc[i].points
+    sub_x["temp"].append(x.sel(point = point))
+    
+    for j in range(len(x)):
+        sub_x["points"].append(point) 
+    
+
 for i in range(len(corr_df)):
     sub_x[i] = x[i]
     sub_y[i] = y[i]
