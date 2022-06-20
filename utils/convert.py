@@ -5,12 +5,13 @@ Created on Wed Mar 23 11:03:43 2022
 @author: mcherqao
 """
 
+# imports
 import pandas as pd
 import numpy as np
 import os
 
+# get data
 data_path = '/work/FAC/FGSE/IDYST/tbeucler/default/meryam/data/data_casa'
-
 def get_files(path):
     files = []
     for r, d, f in os.walk(path):
@@ -47,6 +48,7 @@ def string_to_month(month):
         month = '12'
     return month
 
+# save text data in dataframe
 def txt_to_df(file_name, end, start):
     # table headers
     headers = ["DATE", "PRES", "HGHT", "TEMP", "DWPT", "RELH", "MIXR", "DRCT", "SKNT", "THTA", "THTE", "THTV"]
