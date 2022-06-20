@@ -1,17 +1,14 @@
-# Imports 
+# imports 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 import xarray as xr
 from sklearn.linear_model import LinearRegression
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_validate
 from sklearn.metrics import mean_squared_error, r2_score
-import cartopy.crs as ccrs
 from statsmodels.graphics.gofplots import qqplot
-from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 
 # path of era5 dataset
@@ -89,8 +86,7 @@ print('The r2 (coefficient of determination) is: ', r2_reg)
 print('The rmse (mean squared error) is: ', rmse_reg)
 print('The mean absolute error is: ', abs_error_reg)
 
-# keep from ds_casa only the dates of the test data
-#ds_casa = ds_casa.loc[ds_casa.DATE.isin(y_test.index)]
+
 # plot of the ds_casa temperatures in time, and the predicted temperatures
 fig, ax = plt.subplots(dpi = 300)
 ax.plot(y_test['DATE'], y_test['TEMP'], '.')
@@ -184,6 +180,8 @@ for i in range(len(corr_df)):
 #              cmap='RdYlBu_r', norm=norm, s=0.5, transform=ccrs.PlateCarree())
 #plt.show()
 #map = y_test.sel(time=time_test)['t2m'].plot.imshow(cmap='coolwarm', norm=norm)
+
+
 
 
 
@@ -367,9 +365,9 @@ ax.plot(xaxis, [1]*xaxis, 'k--')
 # add y = r2_pers line
 ax.plot([r2_pers]*xaxis, 0*xaxis, 'g--')
 # add a y = r2_monthly line
-#ax.plot(x_steps, [r2_monthly]*len(x_steps), 'r--')
+#ax.plot(x_steps, [r2_months]*len(x_steps), 'r--')
 # add a y = r2_daily line
-#ax.plot(x_steps, [r2_daily]*len(x_steps), 'b--')
+#ax.plot(x_steps, [r2_days]*len(x_steps), 'b--')
 ax.set_xlabel('Number of inputs')
 ax.set_ylabel('R2')
 plt.tight_layout()

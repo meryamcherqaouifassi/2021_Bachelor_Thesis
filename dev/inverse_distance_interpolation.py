@@ -4,6 +4,10 @@
 Created on Mon Apr 25 11:26:51 2022
 
 @author: mcherqao
+
+This script was created to manually apply an inverse distance inteprolation, 
+but it has been decided to use interpolation librairies instead. 
+As a result, this script was never finished or used for the study.
 """
 # Imports 
 import numpy as np
