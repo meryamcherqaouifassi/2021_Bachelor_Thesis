@@ -14,6 +14,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import xarray as xr
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_absolute_error
 
 
 # path of era5 dataset
@@ -62,14 +65,42 @@ x0 = 33.5883100                # latitude
 y0 = 172.38862 #-3.80569       # longitude
 coords = [x0, y0]
 
+# split train and test sets
+x, y = ds_era5.t2m, ds_casa
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
+
 # linear interpolation 
-lin_interp = ds_era5.interp({'lat':x0, 'lon':y0}, method='linear')
+#lin_interp = ds_era5.t2m.interp({'lat':x0, 'lon':y0}, method='linear')
+lin_interp = x_train.interp({'lat':x0, 'lon':y0}, method='linear')
+lin_interp = pd.DataFrame(lin_interp.values)
+r2_lin = r2_score(y_train['TEMP'], lin_interp.values)
+rmse_lin = mean_squared_error(y_train['TEMP'], lin_interp.values, squared=False)
+mae_lin = mean_absolute_error(y_train['TEMP'], lin_interp.values)
+
+#lin_interp_test = x_test.interp({'lat':x0, 'lon':y0}, method='linear')
+#r2_lin_test = r2_score(y_test['TEMP'], lin_interp_test)
+
 # nearest interpolation
-near_interp = ds_era5.interp({'lat':x0, 'lon':y0}, method='nearest')
+near_interp = x_train.interp({'lat':x0, 'lon':y0}, method='nearest')
+near_inter = pd.DataFrame(near_interp.values)
+r2_near = r2_score(y_train['TEMP'], near_interp.values)
+rmse_near = mean_squared_error(y_train['TEMP'], near_interp.values, squared=False)
+mae_near = mean_absolute_error(y_train['TEMP'], near_interp.values)
+
 # quadratic interpolation
-quad_interp = ds_era5.interp({'lat':x0, 'lon':y0}, method='quadratic')
+quad_interp = x_train.interp({'lat':x0, 'lon':y0}, method='quadratic')
+quad_interp = pd.DataFrame(quad_interp.values)
+r2_quad = r2_score(y_train['TEMP'], quad_interp.values)
+rmse_quad = mean_squared_error(y_train['TEMP'], quad_interp.values, squared=False)
+mae_quad = mean_absolute_error(y_train['TEMP'], quad_interp.values)
+
 # cubic interpolation
-cub_interp = ds_era5.interp({'lat':x0, 'lon':y0}, method='cubic')
+cub_interp = x_train.interp({'lat':x0, 'lon':y0}, method='cubic')
+cub_interp = pd.DataFrame(cub_interp.values)
+r2_cub = r2_score(y_train['TEMP'], cub_interp.values)
+rmse_cub = mean_squared_error(y_train['TEMP'], cub_interp.values, squared=False)
+mae_cub = mean_absolute_error(y_train['TEMP'], cub_interp.values)
+
 
 # plot of the observed and interpolated temperature
 fig, ax = plt.subplots(dpi = 200)
