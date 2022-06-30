@@ -16,9 +16,9 @@ path_era5 = '/work/FAC/FGSE/IDYST/tbeucler/default/meryam/data/era5/media/rasp/E
 # load era5 dataset
 ds_era5 = xr.open_mfdataset(path_era5+'2m_temperature_*_1.40625deg.nc')
 # isolate era5 temperatures around casablanca
-lon_indices = np.logical_and(ds_era5.lon>=170,ds_era5.lon<=175)
+lon_indices = np.logical_and(ds_era5.lon>=171,ds_era5.lon<=173)
     #gives the longitudes array's indices of the area around Casablanca
-lat_indices = np.logical_and(ds_era5.lat>=30,ds_era5.lat<=35)
+lat_indices = np.logical_and(ds_era5.lat>=33,ds_era5.lat<=35)
     #gives the latitudes array's indices of the area around Casablanca
 ds_era5 = ds_era5.isel({'lon':lon_indices,'lat':lat_indices})
     #isolate Casablanca's temp data
