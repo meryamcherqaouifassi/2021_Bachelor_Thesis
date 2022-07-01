@@ -80,8 +80,8 @@ def txt_to_df(file_name, end, start):
     
     for line in firstEightLines :
         if line.startswith(start_date_line):
-            splitted_date = line[-21:-6].split(" ")
-            actual_date = splitted_date[1] + "-" + string_to_month(splitted_date[2]) + "-" + splitted_date[3] + "T" + splitted_date[0]
+            split_date = line[-21:-6].split(" ")
+            actual_date = split_date[1] + "-" + string_to_month(split_date[2]) + "-" + split_date[3] + "T" + split_date[0]
             actual_date = actual_date[:-1]
             print(actual_date)
     
@@ -94,8 +94,8 @@ def txt_to_df(file_name, end, start):
 
         # if line start with start_date_line value keep only 16 last characters
         if line.startswith(start_date_line):
-            splitted_date = line[-21:-6].split(" ")
-            actual_date = splitted_date[1] + "-" + string_to_month(splitted_date[2]) + "-" + splitted_date[3] + "T" + splitted_date[0]
+            split_date = line[-21:-6].split(" ")
+            actual_date = split_date[1] + "-" + string_to_month(split_date[2]) + "-" + split_date[3] + "T" + split_date[0]
             actual_date = actual_date[:-1]
          
         # add edited line in a new array
