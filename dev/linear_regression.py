@@ -86,6 +86,10 @@ print('The r2 (coefficient of determination) is: ', r2_reg)
 print('The rmse (mean squared error) is: ', rmse_reg)
 print('The mean absolute error is: ', abs_error_reg)
 
+pred_train = reg.predict(x_train)
+r2_reg_train = r2_score(y_train['TEMP'], pred_train)
+rmse_reg_train = mean_squared_error(y_train['TEMP'], pred_train, squared=False)
+mae_reg_train = mean_absolute_error(y_train['TEMP'], pred_train)
 
 # plot of the ds_casa temperatures in time, and the predicted temperatures
 fig, ax = plt.subplots(dpi = 300)
@@ -106,6 +110,27 @@ ax.set_xlabel('Observed temperature (°C)')
 ax.set_ylabel('Predicted temperature (°C)')
 ax.legend()
 plt.tight_layout()
+plt.show()
+
+# qqplot of observed and predicted temperatures
+y_test = y_test.reset_index()
+res_reg = [y_test['TEMP'][i]-predictions[i] for i in range (len(predictions))]
+res_reg = np.array(res_reg)
+fig, ax = plt.subplots(dpi=600)
+qqplot(res_reg, line='r', ax=ax)
+plt.tight_layout()
+ax.set_xlabel('Observation quantile [°C]')
+ax.set_ylabel('Prediction quantile [°C]')
+plt.show()
+
+# two-dimensional density plots
+fig, ax = plt.subplots(dpi=600)
+sns.kdeplot(data = y_test['TEMP'], multiple = 'stack', label = 'Observed')
+sns.kdeplot(data = predictions, multiple = 'stack', label = 'Interpolated')
+plt.tight_layout()
+ax.legend()
+ax.set_xlabel('Temperatures')
+ax.set_ylabel('Density')
 plt.show()
 
 # for each time step, calculate the correlation between era5 and casa temperatures
